@@ -16,11 +16,15 @@ const config = {
     },
   },
 
+  scale: {
+    mode: Phaser.Scale.FIT,
+    autoCenter: Phaser.Scale.CENTER_BOTH,
+  },
+
   scene: {
-     preload:preload,
+    preload: preload,
     create: create,
-    update: update
-   
+    update: update,
   },
 };
 
@@ -65,10 +69,10 @@ const highScoreKey = "runBroHighScore";
 new Phaser.Game(config);
 
 function preload() {
-    this.load.spritesheet('player', '/assets/player-run.png', {
-        frameWidth: 543,
-        frameHeight: 724
-    });
+  this.load.spritesheet("player", "/assets/player-run.png", {
+    frameWidth: 543,
+    frameHeight: 724,
+  });
 }
 
 // Runs once when the game starts
@@ -92,44 +96,44 @@ function create() {
 
   // Player
   // Create the player sprite
-player = this.physics.add.sprite(150, 384, 'player');
+  player = this.physics.add.sprite(150, 384, "player");
 
-// Make the character smaller
-player.setScale(0.1);
+  // Make the character smaller
+  player.setScale(0.1);
 
-// Adjust the collision area
-player.body.setSize(360, 600);
-player.body.setOffset(90, 80);
+  // Adjust the collision area
+  player.body.setSize(360, 600);
+  player.body.setOffset(90, 80);
 
-// Keep the player inside the game
-player.setCollideWorldBounds(true);
+  // Keep the player inside the game
+  player.setCollideWorldBounds(true);
 
-// Make the player run
-this.anims.create({
-    key: 'run',
-    frames: this.anims.generateFrameNumbers('player', {
-        start: 0,
-        end: 3
+  // Make the player run
+  this.anims.create({
+    key: "run",
+    frames: this.anims.generateFrameNumbers("player", {
+      start: 0,
+      end: 3,
     }),
     frameRate: 10,
-    repeat: -1
-});
+    repeat: -1,
+  });
 
-player.play('run');
+  player.play("run");
 
   player.body.setCollideWorldBounds(true);
   this.physics.add.collider(player, ground);
 
   // Zombie
- zombie = this.add.rectangle(20, 390, 45, 60, 0x55aa55);
-zombie.setVisible(false);
+  zombie = this.add.rectangle(20, 390, 45, 60, 0x55aa55);
+  zombie.setVisible(false);
 
-zombieLabel = this.add.text(0, 340, 'ZOMBIE', {
-    fontSize: '16px',
-    color: '#ffffff'
-});
+  zombieLabel = this.add.text(0, 340, "ZOMBIE", {
+    fontSize: "16px",
+    color: "#ffffff",
+  });
 
-zombieLabel.setVisible(false);
+  zombieLabel.setVisible(false);
   // Groups
   obstacles = this.physics.add.group();
   boosts = this.physics.add.group();
@@ -141,6 +145,13 @@ zombieLabel.setVisible(false);
 
   // Keyboard controls
   cursors = this.input.keyboard.createCursorKeys();
+
+  // Allow mobile users to jump by tapping the screen
+  this.input.on("pointerdown", () => {
+    if (player.body.touching.down && !gameOver) {
+      player.body.setVelocityY(-500);
+    }
+  });
 
   // Text on screen
   this.add.text(20, 20, "RUN BRO", {
@@ -177,17 +188,17 @@ function update(time, delta) {
   }
 
   // Track how long the player has survived
-gameTime += delta;
+  gameTime += delta;
 
-// Increase normal running speed after 20 seconds
-if (gameTime >= 20000 && normalSpeed !== lateGameSpeed) {
+  // Increase normal running speed after 20 seconds
+  if (gameTime >= 20000 && normalSpeed !== lateGameSpeed) {
     normalSpeed = lateGameSpeed;
 
     // Only change obstacle speed if boost is not active
     if (!isBoostActive) {
-        setWorldSpeed(normalSpeed);
+      setWorldSpeed(normalSpeed);
     }
-}
+  }
 
   // Jump
   if (
@@ -225,7 +236,7 @@ if (gameTime >= 20000 && normalSpeed !== lateGameSpeed) {
       isBoostActive = false;
       boostTimer = 0;
 
-     setWorldSpeed(normalSpeed);
+      setWorldSpeed(normalSpeed);
 
       player.clearTint();
       boostText.setText("BOOST: READY");
@@ -294,48 +305,45 @@ function collectBoost(playerObject, boost) {
 
 // Change the speed of existing obstacles
 function setWorldSpeed(speed) {
+  // Change the speed of all existing obstacles
+  obstacles.getChildren().forEach((obstacle) => {
+    obstacle.body.setVelocityX(-speed);
+  });
 
-    // Change the speed of all existing obstacles
-    obstacles.getChildren().forEach((obstacle) => {
-        obstacle.body.setVelocityX(-speed);
-    });
-
-    // Change the speed of any existing boost collectibles
-    boosts.getChildren().forEach((boost) => {
-        boost.body.setVelocityX(-speed);
-    });
+  // Change the speed of any existing boost collectibles
+  boosts.getChildren().forEach((boost) => {
+    boost.body.setVelocityX(-speed);
+  });
 }
 
 // What happens when the player hits an obstacle
 function hitObstacle(playerObject, obstacle) {
-    if (gameOver) {
-        return;
-    }
+  if (gameOver) {
+    return;
+  }
 
-    // Remove the obstacle
-    obstacle.destroy();
+  // Remove the obstacle
+  obstacle.destroy();
 
-    // Count the mistake
-    zombieBumps++;
+  // Count the mistake
+  zombieBumps++;
 
-    // Show the zombie after the first mistake
-    zombie.setVisible(true);
-    zombieLabel.setVisible(true);
+  // Show the zombie after the first mistake
+  zombie.setVisible(true);
+  zombieLabel.setVisible(true);
 
-    if (zombieBumps === 1) {
-        // First mistake: zombie appears in the distance
-        zombie.x = 20;
+  if (zombieBumps === 1) {
+    // First mistake: zombie appears in the distance
+    zombie.x = 20;
+  } else if (zombieBumps === 2) {
+    // Second mistake: zombie gets much closer
+    zombie.x = 80;
+  } else if (zombieBumps >= 3) {
+    // Third mistake: the zombie catches the player
+    endGame.call(this);
+  }
 
-    } else if (zombieBumps === 2) {
-        // Second mistake: zombie gets much closer
-        zombie.x = 80;
-
-    } else if (zombieBumps >= 3) {
-        // Third mistake: the zombie catches the player
-        endGame.call(this);
-    }
-
-    zombieLabel.setPosition(zombie.x - 25, 340);
+  zombieLabel.setPosition(zombie.x - 25, 340);
 }
 
 // End the game
